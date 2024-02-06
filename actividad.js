@@ -328,39 +328,67 @@ const runCase = (option) => {
   switch (option) {
     case '1':
       redConverter();
+      // The red conversion comment was originally here but the log should be for green as per the instruction.
       console.log(
-        'La imagen se ha convertido a tonalidad verde y fue grabada en folder output'
+        '\x1b[32mLa imagen se ha convertido a tonalidad roja y fue grabada en el folder output\x1b[0m'
       );
       break;
     case '2':
       greenConverter();
+      console.log(
+        '\x1b[32mLa imagen se ha convertido a tonalidad verde y fue grabada en el folder output\x1b[0m'
+      );
       break;
     case '3':
       blueConverter();
+      console.log(
+        '\x1b[32mLa imagen se ha convertido a tonalidad azul y fue grabada en el folder output\x1b[0m'
+      );
       break;
     case '4':
       greyConverter();
+      console.log(
+        '\x1b[32mLa imagen se ha convertido a escala de grises y fue grabada en el folder output\x1b[0m'
+      );
       break;
     case '5':
       blackAndWhiteConverter();
+      console.log(
+        '\x1b[32mLa imagen se ha convertido a blanco y negro y fue grabada en el folder output\x1b[0m'
+      );
       break;
     case '6':
       scaleDown();
+      console.log(
+        '\x1b[32mLa imagen ha sido reducida y fue grabada en el folder output\x1b[0m'
+      );
       break;
     case '7':
       dimBrightness(2);
+      console.log(
+        '\x1b[32mLa luminosidad de la imagen ha sido atenuada y fue grabada en el folder output\x1b[0m'
+      );
       break;
     case '8':
       invertColors();
+      console.log(
+        '\x1b[32mLos colores de la imagen han sido invertidos y fue grabada en el folder output\x1b[0m'
+      );
       break;
     case '9':
       merge(0.3, 0.7);
+      console.log(
+        '\x1b[32mLas imágenes han sido fusionadas y fue grabada en el folder output\x1b[0m'
+      );
       break;
     case 'all':
       runAllCases();
+      console.log(
+        '\x1b[32mTodas las transformaciones se han completado\x1b[0m'
+      );
       break;
     default:
-      console.log('Opción no válida.');
+      console.log('\x1b[31mOpción no válida.\x1b[0m'); // Red color for invalid option
   }
 };
 
@@ -370,7 +398,10 @@ const runAllCases = () => {
   }
 };
 
-rl.question('Elije una opcion de (1-9) o "all" para correr todos los casos: ', (answer) => {
-  runCase(answer);
-  rl.close();
-});
+rl.question(
+  'Elije una opcion de (1-9) o "all" para correr todos los casos: ',
+  (answer) => {
+    runCase(answer);
+    rl.close();
+  }
+);
