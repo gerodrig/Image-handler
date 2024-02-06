@@ -48,12 +48,17 @@ export default class ImageHandler {
    *  - save-pixels
    *
    */
-savePixels(pixels, path, width = this.shape[0], height = this.shape[1]) {
+savePixels(pixels, path, width = this.shape[0], height = this.shape[1], shape = 3) {
+
+    const newPixels = ndarray(pixels, [width, height, shape]);
+
+    // console.log(pixels, newPixels);
+
     //? Guardar los pixeles en la imagen
     let finished = false;
     let hadError = false;
 
-    const stream = savePixels(pixels, 'jpg').pipe(
+    const stream = savePixels(newPixels, 'jpg').pipe(
         fs.createWriteStream(path)
     );
     stream.on('finish', () => (finished = true));
@@ -87,9 +92,9 @@ savePixels(pixels, path, width = this.shape[0], height = this.shape[1]) {
     let done = false;
 
     //? Leer la imagen y guardar los pixeles en el atributo 'pixels'
-    console.log(this.path);
+    // console.log(this.path);
     getPixels(this.path, (err, pixels) => {
-      console.log(pixels);
+    //   console.log(pixels);
 
       if (err) {
         console.error('Error al leer la imagen: ', err);

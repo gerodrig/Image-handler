@@ -1,3 +1,4 @@
+import readline from 'readline';
 import ImageHandler from './ImageHandler.js';
 
 let path = './input/tucan.jpg';
@@ -44,15 +45,18 @@ export const redConverter = () => {
   let pixels = handler.getPixels();
 
   //? Poner los canales G y B a 0
+  let nuevaImagen = [];
   for (let i = 0; i < pixels.shape[0]; i++) {
     for (let j = 0; j < pixels.shape[1]; j++) {
-      pixels.set(i, j, 1, 0);
-      pixels.set(i, j, 2, 0);
+      //   copiar a nuevaImagen;
+      nuevaImagen.push(pixels.get(i, j, 0));
+      nuevaImagen.push(0);
+      nuevaImagen.push(0);
     }
   }
 
-  //? Guardar los pixeles en la imagen
-  handler.savePixels(pixels, outputPath);
+  //? Guardar los pixeles en la imagen asynchroneamente
+  handler.savePixels(nuevaImagen, outputPath);
 };
 
 /**
@@ -60,18 +64,20 @@ export const redConverter = () => {
  *
  * Una forma de conseguirlo es simplemente poner los canales R y B a 0 para cada pixel.
  */
-export const greenConverter = () => {
+export const greenConverter = async () => {
   let outputPath = 'output/tucan_green.jpg';
   let pixels = handler.getPixels();
 
   //Aqui tu codigo
+  let nuevaImagen = [];
   for (let i = 0; i < pixels.shape[0]; i++) {
     for (let j = 0; j < pixels.shape[1]; j++) {
-      pixels.set(i, j, 0, 0);
-      pixels.set(i, j, 2, 0);
+      nuevaImagen.push(0);
+      nuevaImagen.push(pixels.get(i, j, 1));
+      nuevaImagen.push(0);
     }
   }
-  handler.savePixels(pixels, outputPath);
+  await handler.savePixels(nuevaImagen, outputPath);
 };
 
 /**
@@ -84,14 +90,16 @@ export const blueConverter = () => {
   let pixels = handler.getPixels();
 
   //Aqui tu codigo
+  let nuevaImagen = [];
   for (let i = 0; i < pixels.shape[0]; i++) {
     for (let j = 0; j < pixels.shape[1]; j++) {
-      pixels.set(i, j, 0, 0);
-      pixels.set(i, j, 1, 0);
+      nuevaImagen.push(0);
+      nuevaImagen.push(0);
+      nuevaImagen.push(pixels.get(i, j, 2));
     }
   }
 
-  handler.savePixels(pixels, outputPath);
+  handler.savePixels(nuevaImagen, outputPath);
 };
 
 /**
@@ -108,22 +116,18 @@ export const greyConverter = () => {
   let pixels = handler.getPixels();
 
   //Aqui tu codigo
+  let nuevaImagen = [];
   for (let i = 0; i < pixels.shape[0]; i++) {
     for (let j = 0; j < pixels.shape[1]; j++) {
       let media =
         (pixels.get(i, j, 0) + pixels.get(i, j, 1) + pixels.get(i, j, 2)) / 3;
-      pixels.set(i, j, 0, media);
-      pixels.set(i, j, 1, media);
-      pixels.set(i, j, 2, media);
+      nuevaImagen.push(media);
+      nuevaImagen.push(media);
+      nuevaImagen.push(media);
     }
   }
 
-  handler.savePixels(
-    pixels,
-    outputPath,
-    handler.getShape()[0],
-    handler.getShape()[1]
-  );
+  handler.savePixels(nuevaImagen, outputPath);
 };
 
 /**
@@ -133,23 +137,36 @@ export const greyConverter = () => {
  * si esta es menor que 128 transforamr el pixel en negro [0, 0, 0] o, en caso contrario,
  * transformar el pixel en blanco [255, 255, 255].
  */
-export const blackAndWhiteConverter = () => {
+export const blackAndWhiteConverter = (threshold = 64) => {
   let outputPath = 'output/tucan_black_and_white.jpg';
   let pixels = handler.getPixels();
 
-  //Aqui tu codigo
-  // Iterate over each pixel
-  for (let i = 0; i < pixels.data.length; i += 4) {
-    // Calculate the average of the red, green, and blue values
-    let avg = (pixels.data[i] + pixels.data[i + 1] + pixels.data[i + 2]) / 3;
+  // Elegir threshold para claridad de la imagen
 
-    // Set each color channel to the average
-    pixels.data[i] = avg; // Red
-    pixels.data[i + 1] = avg; // Green
-    pixels.data[i + 2] = avg; // Blue
+  // Create a new array to store the modified pixels
+  let nuevaImagen = new Uint8Array(pixels.shape[0] * pixels.shape[1] * 4);
+  for (let i = 0; i < pixels.shape[0]; i++) {
+    for (let j = 0; j < pixels.shape[1]; j++) {
+      let media =
+        (pixels.get(i, j, 0) + pixels.get(i, j, 1) + pixels.get(i, j, 2)) / 3;
+
+      let color = media > threshold ? 255 : 0; // threshold de 128 hace la imagen un poco mas oscura
+
+      // Calculate the index in the data array
+      let index = (i * pixels.shape[1] + j) * 4;
+      nuevaImagen[index] = color; // Red channel
+      nuevaImagen[index + 1] = color; // Green channel
+      nuevaImagen[index + 2] = color; // Blue channel
+    }
   }
 
-  handler.savePixels(pixels, outputPath);
+  handler.savePixels(
+    nuevaImagen,
+    outputPath,
+    pixels.shape[0],
+    pixels.shape[1],
+    4
+  );
 };
 
 /**
@@ -157,12 +174,21 @@ export const blackAndWhiteConverter = () => {
  *
  * Una forma de conseguirlo es quitar los valores de las filas y columnas pares.
  */
-export const scaleDown = () => {
+export const scaleDown = async () => {
   let outputPath = 'output/tucan_scale_down.jpg';
   let pixels = handler.getPixels();
 
   //Aqui tu codigo
-  //code to scale down the image
+  //code to scale down the image to  half by removing the even rows and columns
+  let nuevaImagen = [];
+  for (let i = 0; i < pixels.shape[0]; i += 2) {
+    for (let j = 0; j < pixels.shape[1]; j += 2) {
+      for (let k = 0; k < 3; k++) {
+        // Asumiendo que trabajamos con imágenes RGB
+        nuevaImagen.push(pixels.get(i, j, k));
+      }
+    }
+  }
 
   handler.savePixels(
     nuevaImagen,
@@ -182,15 +208,16 @@ export const dimBrightness = (dimFactor) => {
   let pixels = handler.getPixels();
 
   //Aqui tu codigo
+  let newImage = [];
   for (let i = 0; i < pixels.shape[0]; i++) {
     for (let j = 0; j < pixels.shape[1]; j++) {
-      pixels.set(i, j, 0, pixels.get(i, j, 0) / dimFactor);
-      pixels.set(i, j, 1, pixels.get(i, j, 1) / dimFactor);
-      pixels.set(i, j, 2, pixels.get(i, j, 2) / dimFactor);
+      newImage.push(pixels.get(i, j, 0) / dimFactor);
+      newImage.push(pixels.get(i, j, 1) / dimFactor);
+      newImage.push(pixels.get(i, j, 2) / dimFactor);
     }
   }
 
-  handler.savePixels(pixels, outputPath);
+  handler.savePixels(newImage, outputPath);
 };
 
 /**
@@ -205,8 +232,16 @@ export const invertColors = () => {
   let pixels = handler.getPixels();
 
   //Aqui tu codigo
+  let nuevaImagen = [];
+  for (let i = 0; i < pixels.shape[0]; i++) {
+    for (let j = 0; j < pixels.shape[1]; j++) {
+      nuevaImagen.push(255 - pixels.get(i, j, 0));
+      nuevaImagen.push(255 - pixels.get(i, j, 1));
+      nuevaImagen.push(255 - pixels.get(i, j, 2));
+    }
+  }
 
-  handler.savePixels(pixels, outputPath);
+  handler.savePixels(nuevaImagen, outputPath);
 };
 
 /**
@@ -218,20 +253,53 @@ export const invertColors = () => {
  * @param alphaFirst Parametro a aplicar sobre la primera imagen
  * @param alphaSecond Parametro a aplicar sobre la segunda imagen
  */
-function merge(alphaFirst, alphaSecond) {
-  let catHandler = new ImageHandler('input/cat.jpg');
-  let dogHandler = new ImageHandler('input/dog.jpg');
+export const merge = (alphaFirst = 0.3, alphaSecond = 0.7) => {
+  if (alphaFirst + alphaSecond !== 1) {
+    throw new Error('Los factores de fusion deben sumar 1');
+  }
+
+  let catHandler = new ImageHandler('./input/cat.jpg');
+  let dogHandler = new ImageHandler('./input/dog.jpg');
   let outputPath = 'output/merged.jpg';
 
   let catPixels = catHandler.getPixels();
   let dogPixels = dogHandler.getPixels();
 
-  let pixels = [];
+  if (
+    catPixels.shape[0] !== dogPixels.shape[0] ||
+    catPixels.shape[1] !== dogPixels.shape[1]
+  ) {
+    throw new Error(
+      'Las imágenes deben tener las mismas dimensiones para fusionarse'
+    );
+  }
 
+  let pixels = new Uint8ClampedArray(
+    catPixels.shape[0] * catPixels.shape[1] * 4
+  );
   //Aqui tu codigo
+  for (let i = 0; i < catPixels.shape[0]; i++) {
+    for (let j = 0; j < catPixels.shape[1]; j++) {
+      let index = (i * catPixels.shape[1] + j) * 4;
+      for (let k = 0; k < 3; k++) {
+        // Iterate over RGB channels
+        let mergedValue =
+          catPixels.get(i, j, k) * alphaSecond +
+          dogPixels.get(i, j, k) * alphaFirst;
+        pixels[index + k] = Math.round(mergedValue);
+      }
+      pixels[index + 3] = 255; // Set alpha channel to fully opaque
+    }
+  }
 
-  dogHandler.savePixels(pixels, outputPath);
-}
+  dogHandler.savePixels(
+    pixels,
+    outputPath,
+    catPixels.shape[0],
+    catPixels.shape[1],
+    4
+  );
+};
 
 /**
  * Programa de prueba
@@ -251,36 +319,58 @@ function merge(alphaFirst, alphaSecond) {
  *     Negativo: 8
  *     Fusion de imagenes: 9
  */
-// let optionN = 1;
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
 
-// switch (optionN) {
-//   case 1:
-//     redConverter();
-//     break;
-//   case 2:
-//     greenConverter();
-//     break;
-//   case 3:
-//     blueConverter();
-//     break;
-//   case 4:
-//     greyConverter();
-//     break;
-//   case 5:
-//     blackAndWhiteConverter();
-//     break;
-//   case 6:
-//     scaleDown();
-//     break;
-//   case 7:
-//     dimBrightness(2);
-//     break;
-//   case 8:
-//     invertColors();
-//     break;
-//   case 9:
-//     merge(0.3, 0.7);
-//     break;
-//   default:
-//     ejemplo();
-// }
+const runCase = (option) => {
+  switch (option) {
+    case '1':
+      redConverter();
+      console.log(
+        'La imagen se ha convertido a tonalidad verde y fue grabada en folder output'
+      );
+      break;
+    case '2':
+      greenConverter();
+      break;
+    case '3':
+      blueConverter();
+      break;
+    case '4':
+      greyConverter();
+      break;
+    case '5':
+      blackAndWhiteConverter();
+      break;
+    case '6':
+      scaleDown();
+      break;
+    case '7':
+      dimBrightness(2);
+      break;
+    case '8':
+      invertColors();
+      break;
+    case '9':
+      merge(0.3, 0.7);
+      break;
+    case 'all':
+      runAllCases();
+      break;
+    default:
+      console.log('Opción no válida.');
+  }
+};
+
+const runAllCases = () => {
+  for (let i = 1; i <= 9; i++) {
+    runCase(i.toString());
+  }
+};
+
+rl.question('Elije una opcion de (1-9) o "all" para correr todos los casos: ', (answer) => {
+  runCase(answer);
+  rl.close();
+});
